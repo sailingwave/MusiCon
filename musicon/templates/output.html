@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="starter-template">
+        <h1>This is the response</h1>
+    </div>
+
+    <audio controls autoplay>
+        <source src="{{ url_for('static',filename=audio_name) }}" type="audio/wav">
+                Your browser does not support this audio format
+    </audio>
+
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="static/js/bootstrap.min.js"></script>
+</div><!-- /.container -->
+{% endblock %}
