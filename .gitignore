@@ -93,3 +93,6 @@ ENV/
 
 # mac
 .DS_Store
+
+# music files
+.wav .mp3

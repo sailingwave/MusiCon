@@ -9,6 +9,7 @@ from scipy.fftpack import rfft,rfftfreq
 from scipy import log10
 import numpy as np
 from sklearn.externals import joblib
+from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 
 
@@ -51,10 +52,13 @@ def output():
 
     #parameter setting
     piece_dur = 5  # duration of the piece in seconds
-    n_max_freqs = 100
+    n_freq_bins = 2205  # number of freq bins
 
     model_url = os.path.join(SITE_ROOT, "ml_model/logit.pkl")
     model_fit = joblib.load(model_url)
+
+    pca_url = os.path.join(SITE_ROOT, "ml_model/pca.pkl")
+    pca_fit = joblib.load(pca_url)
 
     audio_url = os.path.join(down_path,in_audio_name+"."+audio_format)
     rate, audio = wv.read(audio_url)    #load audio
@@ -62,11 +66,11 @@ def output():
     if(audio.ndim == 1):
         in_audio = audio
     else:
-        in_audio = np.mean(audio,axis=1)    #mean of the channels from the two channels
+        in_audio = audio[:,0]    #1st channel
 
 
     # initialize
-    audio_stats = np.empty((0,2))    #record stats
+    music_array = np.empty((0,n_freq_bins))
 
     audio_len = len(in_audio)
     piece_len = rate * piece_dur
@@ -76,7 +80,7 @@ def output():
     end = piece_len
     i = 0
 
-    while start < audio_len:
+    while end < audio_len:    #end to start: need to fix
         if(end) > audio_len:
             end = audio_len
             window = hann(end-start)
@@ -90,21 +94,22 @@ def output():
 
         mags_w = 20 * log10(mags_w)  # to db
 
-        max_idx = np.argsort(mags_w)[::-1][:n_max_freqs]
-        max_freqs = freqs[max_idx]
-        max_mags = mags_w[max_idx]
+        wsum = mags_w * freqs
+        wsum = wsum[np.arange(220500)]
+        mag_mean = np.mean(mags_w)
+        wsum = wsum.reshape((-1, piece_dur * 20))  # 20*5*2205 = 220500
+        freq_bin_mag = np.mean(wsum, axis=1) / mag_mean
 
-        freq_wmean = np.sum(max_mags * max_freqs) / np.sum(max_mags)
-        freq_sd = np.std(max_freqs)
-
-        audio_stats = np.concatenate((audio_stats,np.array([[freq_wmean,freq_sd]])))
-
+        music_array = np.concatenate((music_array,np.array([freq_bin_mag])))
 
         start += piece_len
         end += piece_len
         i += 1
 
-    is_music = model_fit.predict(audio_stats).astype('bool')
+    #project to PCA
+    data_pca = pca_fit.transform(music_array)
+
+    is_music = model_fit.predict(data_pca).astype('bool')
 
     print(is_music)
     #output audio
