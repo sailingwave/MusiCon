@@ -91,7 +91,7 @@ def audio_process(url,out_audio_name):
             mags_data = np.mean(mags_w[1:,].reshape((n_freq_bins,-1)),axis=1)-mag_mean    #1:, exclude the DC
 
         mags_data = mags_data.reshape(1,-1)
-        
+
         #construct ML variables
         # project to PCA
         data_pca = pca_fit.transform(mags_data)
