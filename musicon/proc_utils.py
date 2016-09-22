@@ -1,35 +1,34 @@
-#import youtube_dl
 import os
 import subprocess as sp
 import pafy
 import numpy as np
 import pandas as pd
-import scipy.io.wavfile as wv
 from scipy.signal import hann
 from numpy.fft import rfft,rfftfreq
 from scipy import log10
 from sklearn.externals import joblib
 from sklearn.decomposition import PCA
-from sklearn.linear_model import LogisticRegression
+#from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from flask import current_app
+import re
 
 
-def audio_process(url,out_audio_name):
+def audio_process(url):
+    '''Find the music/non-music part in a youtube video'''
     # parameter setting
     FFMPEG_BIN = os.environ['FFMPEG_BIN']
     SITE_ROOT = current_app.root_path
 
-    out_audio_url = os.path.join(SITE_ROOT,"static/workdir",out_audio_name+".wav")
-
-    piece_len = 5  # duration of a piece in seconds being processed at a time
+    piece_len = 2  # duration of a piece in seconds being processed at a time
     rate = 44100    #sample rate of audio, must be divisible by 2*freq_bin_size
     freq_bin_size = 10    #for bin fft freqs
     n_freq_bins = int(rate/freq_bin_size/2)    #number of freq bins
-    n_channel = 2    #2 channels, just use the 1st channel for classification
 
     piece_size = rate * piece_len    #data size of each piece
 
     #load ML models
+    #model_url = os.path.join(SITE_ROOT, "ml_model/rf.pkl")
     model_url = os.path.join(SITE_ROOT, "ml_model/logit.pkl")
     model_fit = joblib.load(model_url)
 
@@ -46,21 +45,40 @@ def audio_process(url,out_audio_name):
                '-f', 's16le',
                '-acodec', 'pcm_s16le',
                '-ar', str(rate),
-               '-ac', str(n_channel),
+               '-ac', '2',
                '-']
     pipe = sp.Popen(command, stdout=sp.PIPE, bufsize=10 ** 8)
 
-    raw_audio = b'00'  # initial
+    #construct the embedding url
+    video_name = youtube_ulr_conv(url)
 
     # initialize
-    out_audio = np.empty((0,2))
-    #init = True    #if first round of ananlysis
+    n_consec_music = 0    #when consec music>=2, classify as music start
+    n_consec_nonmusic = 0
+    n_music_end_consec_piece = 3    #how many consec nonmusic pieces needed to determine an end
+    is_music_started = False    #has this piece of music started
 
-    while raw_audio != b'':
-        raw_audio = pipe.stdout.read(piece_size*n_channel*2)    #*2: int16 is two byte
+    now = 0    #time of current processing (seconds)
+    start = 0    #time of current music start (seconds)
+    end = 0    #time of current music end (seconds)
+    emb_urls = []    #urls for embedding videos
+
+
+    while True:
+        print(now)
+
+        raw_audio = pipe.stdout.read(piece_size*2*2)    #*2: int16 is two byte
+
+        if(raw_audio == b''):    #end
+            break
 
         clip_2c = np.fromstring(raw_audio, dtype="int16")
         clip_2c = clip_2c.reshape((len(clip_2c) / 2, 2))
+
+        if(np.all(clip_2c==0)):    #all silence
+            now = now + piece_len
+            continue
+
         clip = clip_2c[:,0]    #[0]: the 1st channel
 
         curr_size = len(clip)
@@ -87,27 +105,78 @@ def audio_process(url,out_audio_name):
             mags_data = mags_data.groupby('grp').mean().iloc[1:,].transpose()
 
         else:
-            #hard code the binning rule, assuming
+            #hard code the binning rule, assuming data size is divisible by bin size
             mags_data = np.mean(mags_w[1:,].reshape((n_freq_bins,-1)),axis=1)-mag_mean    #1:, exclude the DC
 
+        mags_sub = mags_data[0:500]
         mags_data = mags_data.reshape(1,-1)
 
         #construct ML variables
         # project to PCA
         data_pca = pca_fit.transform(mags_data)
 
-        is_music = model_fit.predict(data_pca).astype('bool')
+        data_pred = data_pca
+        # data_pred = np.hstack((data_pca, np.array([[mag_mean]]), np.array([cat_mag(mags_sub)]),
+        #                             np.array([[spec_rolloff(mags_sub)]])))
 
-        if(is_music):
-            out_audio = np.concatenate((out_audio,clip_2c))
 
-        #clip_last = clip
+        is_music = model_fit.predict(data_pred).astype('bool')
+        is_music_prob = model_fit.predict_proba(data_pred)
 
-    ##TO DO: apply a window function before joining the clips
+        #need 2 consecutive pieces to be music/non-music to segment
 
-    # if(audio.ndim == 1):
-    #     out_audio = audio[audio_idx]
-    # else:
-    #     out_audio = audio[audio_idx,:]
+        if(not is_music_started):
+            if(is_music):
+                if(n_consec_music == 1):
+                    start = now - piece_len
+                    is_music_started = True
+                else:
+                    n_consec_music += 1
+            else:
+                n_consec_music = 0
+        else:
+            if(not is_music):
+                if(n_consec_nonmusic==n_music_end_consec_piece-1):
+                    end = now - piece_len*(n_music_end_consec_piece-1)
+                    print(start, end)
+                    is_music_started = False
+                    emb_urls.append(video_name + "?start=" + str(start) + "&end=" + str(end))
+                else:
+                    n_consec_nonmusic += 1
+            else:
+                n_consec_nonmusic = 0
 
-    wv.write(out_audio_url,rate=rate,data=out_audio)
+
+        print(str(is_music) + "," + str(is_music_prob))
+        print(n_consec_music, n_consec_nonmusic, is_music_started)
+
+        #before next iter
+        now = now+piece_len
+        print("=====")
+
+    #check the last piece
+    if(start>end):
+        emb_urls.append(video_name + "?start=" + str(start))
+
+    return(emb_urls)
+
+
+def cat_mag(vect):    #vect length of 500
+    return(np.hstack((np.mean(vect[0:8]),np.mean(vect[8:300]),np.mean(vect[300:]))))
+
+def spec_rolloff(vect,k=0.85):
+    spectralSum = np.sum(vect)
+    sr_t = np.where(np.cumsum(vect) >= k * spectralSum)[0][0]
+    return(sr_t)
+
+def youtube_ulr_conv(in_url):
+    '''Find the name of the video in the url for setting the start and end time'''
+
+    search = re.search('watch\?v=(.*)',in_url)
+
+    if(search != None):
+        video_urlname = search.group(1)
+    else:
+        video_urlname = None
+
+    return(video_urlname)
