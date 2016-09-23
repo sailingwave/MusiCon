@@ -10,7 +10,7 @@ from sklearn.externals import joblib
 from sklearn.decomposition import PCA
 #from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from flask import current_app
+#from flask import current_app
 import re
 
 
@@ -18,7 +18,9 @@ def audio_process(url):
     '''Find the music/non-music part in a youtube video'''
     # parameter setting
     FFMPEG_BIN = os.environ['FFMPEG_BIN']
-    SITE_ROOT = current_app.root_path
+    #SITE_ROOT = current_app.root_path
+    #SITE_ROOT = os.path.abspath('./musicon/')
+    SITE_ROOT = './musicon/'
 
     piece_len = 2  # duration of a piece in seconds being processed at a time
     rate = 44100    #sample rate of audio, must be divisible by 2*freq_bin_size
@@ -61,7 +63,7 @@ def audio_process(url):
     now = 0    #time of current processing (seconds)
     start = 0    #time of current music start (seconds)
     end = 0    #time of current music end (seconds)
-    emb_urls = []    #urls for embedding videos
+    emb_urls = ''    #urls for embedding videos
 
 
     while True:
@@ -140,7 +142,8 @@ def audio_process(url):
                     end = now - piece_len*(n_music_end_consec_piece-1)
                     print(start, end)
                     is_music_started = False
-                    emb_urls.append(video_name + "?start=" + str(start) + "&end=" + str(end))
+                    emb_urls = video_name + "?start=" + str(start) + "&end=" + str(end)
+                    yield(emb_urls)
                 else:
                     n_consec_nonmusic += 1
             else:
@@ -156,23 +159,24 @@ def audio_process(url):
 
     #check the last piece
     if(start>end):
-        emb_urls.append(video_name + "?start=" + str(start))
-
-    return(emb_urls)
+        emb_urls = video_name + "?start=" + str(start)
+        yield(emb_urls)
 
 
 def cat_mag(vect):    #vect length of 500
     return(np.hstack((np.mean(vect[0:8]),np.mean(vect[8:300]),np.mean(vect[300:]))))
+
 
 def spec_rolloff(vect,k=0.85):
     spectralSum = np.sum(vect)
     sr_t = np.where(np.cumsum(vect) >= k * spectralSum)[0][0]
     return(sr_t)
 
+
 def youtube_ulr_conv(in_url):
     '''Find the name of the video in the url for setting the start and end time'''
 
-    search = re.search('watch\?v=(.*)',in_url)
+    search = re.search("watch\?v=(.*)\&*",in_url)
 
     if(search != None):
         video_urlname = search.group(1)
