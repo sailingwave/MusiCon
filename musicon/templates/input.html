@@ -2,19 +2,18 @@
 {% block content %}
 <div class="container">
     <div class="starter-template">
-        <h1>A shiny name here</h1>
-        <p class="lead">Description.</p>
+        <h1>MusiCon</h1>
+        <h4>Extract music clips out of a YouTube video</h4>
     </div>
 
-    <div class="starter-template">
-        <h3>input here</h3>
-    </div>
-
-    <div class = "container">
+    <div class = "container" style="text-align: center">
         <form  action="/output" method="GET">
           <div class="form-group">
-            <label for="video_url">URL to the YouTube video:</label>
-            <input type="text" id="video_url" name='video_url' placeholder="e.g. https://www.youtube.com/watch?v=T1pijyA4WZs">
+            <label for="video_url">Link to the YouTube music video:</label>
+              <br>
+            <input type="text" id="video_url" name='video_url'
+                   placeholder="e.g. https://www.youtube.com/watch?v=3qIQzvmtBBw"
+                   required autofocus value="https://www.youtube.com/watch?v=3qIQzvmtBBw">
           </div>
 
           <div>

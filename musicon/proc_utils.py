@@ -57,8 +57,9 @@ def audio_process(url):
     # initialize
     n_consec_music = 0    #when consec music>=2, classify as music start
     n_consec_nonmusic = 0
-    n_music_end_consec_piece = 3    #how many consec nonmusic pieces needed to determine an end
+    n_music_end_consec_piece = 5    #how many consec nonmusic pieces needed to determine an end
     is_music_started = False    #has this piece of music started
+    music_min_len = 10    #the minimum length of piece to output
 
     now = 0    #time of current processing (seconds)
     start = 0    #time of current music start (seconds)
@@ -142,8 +143,9 @@ def audio_process(url):
                     end = now - piece_len*(n_music_end_consec_piece-1)
                     print(start, end)
                     is_music_started = False
-                    emb_urls = video_name + "?start=" + str(start) + "&end=" + str(end)
-                    yield(emb_urls)
+                    if(end-start>music_min_len):
+                        emb_urls = video_name + "?start=" + str(start) + "&end=" + str(end)
+                        yield(emb_urls)
                 else:
                     n_consec_nonmusic += 1
             else:

@@ -5,16 +5,18 @@
         <h2>Here are the music clips</h2>
     </div>
 
-    <div style="text-align: center">
+    <div id="clips" style="text-align: center">
+
+
     {% for link in links %}
-        <p> {{ loop.index }}.
+        <p> {{ loop.index }}. </p>
         <iframe width="360" height="270" src="https://www.youtube.com/embed/{{link|safe}}"
                 frameborder="0" allowfullscreen></iframe>
 
         <br>
     {% endfor %}
-    </div>
 
+    </div>
     <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
     <script src="static/js/bootstrap.min.js"></script>
 </div><!-- /.container -->
