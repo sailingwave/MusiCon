@@ -47,27 +47,24 @@
 
 <br><br>
 
-<div class="container">
+<div class="container" id="input_control">
     <div class="starter-template">
         <h1>MusiCon</h1>
         <h4>Extract music clips out of a YouTube video</h4>
     </div>
 
     <div class = "container" style="text-align: center">
-        <form method="GET">
-            <div class="form-group">
-                <label for="video_url">Link to the YouTube music video:</label>
-                <br>
-                <input type="text" id="video_url" name='video_url'
-                       placeholder="e.g. https://www.youtube.com/watch?v=T1pijyA4WZs"
-                       required autofocus value="https://www.youtube.com/watch?v=mrU6e6kvFR8">
-            </div>
+        <div class="form-group">
+            <label for="video_url">Link to the YouTube music video:</label>
+            <br>
+            <input type="text" id="video_url" name='video_url'
+                   placeholder="e.g. https://www.youtube.com/watch?v=T1pijyA4WZs"
+                   required autofocus value="https://www.youtube.com/watch?v=mrU6e6kvFR8">
+        </div>
 
-            <div>
-                <button type="submit" class="btn btn-default btn-lg" id="gobtn">Go!</button>
-            </div>
-
-        </form>
+        <div>
+            <button class="btn btn-default btn-lg" id="gobtn">Go!</button>
+        </div>
     </div>
 </div><!-- /.container -->
 
@@ -76,17 +73,12 @@
         <h2>Here are the music clips</h2>
     </div>
 
+    <div>
+        <button class="btn btn-default btn-sm" id="stopbtn">Stop processing</button>
+    </div>
+
     <div id="clips" style="text-align: center">
-
-        <div id="may">nothing received yet</div>
-
-        <!--{% for link in links %}-->
-        <!--<p> {{ loop.index }}.-->
-        <!--<iframe width="360" height="270" src="https://www.youtube.com/embed/{{link|safe}}"-->
-        <!--frameborder="0" allowfullscreen></iframe>-->
-
-        <!--<br>-->
-        <!--{% endfor %}-->
+        <!--clips added using js-->
     </div>
 </div><!-- /.container -->
 

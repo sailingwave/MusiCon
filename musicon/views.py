@@ -17,19 +17,20 @@ def output():
 
     #links = proc_utils.audio_process(video_url)
 
-    # return render_template("output.html",links = links)
-
     def event():  # for testing
-        links = ['https://www.youtube.com/embed/i_QdlmDToVM',
-                 'https://www.youtube.com/embed/CQY3KUR3VzM',
-                 'https://www.youtube.com/embed/hzKGo0q4T7c']
+        links = ['i_QdlmDToVM',
+                 'CQY3KUR3VzM',
+                 'hzKGo0q4T7c']
 
         for l in links:
-            print('hi')
-            yield l
+            yield server_sent_event(l)
             time.sleep(2)
+        else:
+            yield "event: end\ndata: {}\n\n"
 
-    #return Response(stream_template('output.html', links = proc_utils.audio_process(video_url)))
+
     return Response(event(), mimetype="text/event-stream")
 
 
+def server_sent_event(url_name):
+    return('event: video\ndata: {"video_url":"https://www.youtube.com/embed/%s"}\n\n' % url_name)    #has to conform to this format for EventSource in js to run
