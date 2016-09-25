@@ -1,13 +1,14 @@
 $(document).ready(function() {
-    //$('#video').hide();
+    $('#video').hide();
 
     var source = null;
+    var n_clips = 0;
 
     $('#gobtn').click(function() {
         $('#input_control').hide();
         $('#video').show();
 
-        source = new EventSource('/output/');
+        source = new EventSource('/output/'+encodeURIComponent($("#video_url").val()));
 
         source.addEventListener('video', event_video, false);
     	source.addEventListener('end', event_end, false);
@@ -22,6 +23,9 @@ $(document).ready(function() {
         var data = JSON.parse(event.data);
         var video_url = data.video_url;
         console.log(video_url);
+
+        n_clips = n_clips+1;
+        $('#clips').append('<p>'+n_clips+'. </p>');
         $('#clips').append('<iframe width="360" height="270" src="'+video_url+'" frameborder="0" allowfullscreen></iframe>');
     }
 

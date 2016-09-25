@@ -143,7 +143,8 @@ def audio_process(url):
                     print(start, end)
                     is_music_started = False
                     emb_urls = video_name + "?start=" + str(start) + "&end=" + str(end)
-                    yield(emb_urls)
+
+                    yield(server_sent_event(emb_urls))
                 else:
                     n_consec_nonmusic += 1
             else:
@@ -160,7 +161,9 @@ def audio_process(url):
     #check the last piece
     if(start>end):
         emb_urls = video_name + "?start=" + str(start)
-        yield(emb_urls)
+        yield(server_sent_event(emb_urls))
+
+    yield("event: end\ndata: {}\n\n")    #end of stream
 
 
 def cat_mag(vect):    #vect length of 500
@@ -184,3 +187,7 @@ def youtube_ulr_conv(in_url):
         video_urlname = None
 
     return(video_urlname)
+
+
+def server_sent_event(url_name):
+    return('event: video\ndata: {"video_url":"https://www.youtube.com/embed/%s"}\n\n' % url_name)    #has to conform to this format for EventSource in js to run
