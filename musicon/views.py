@@ -1,42 +1,38 @@
-from flask import render_template, Response
+from flask import Response,render_template
 from musicon import app,proc_utils
-from flask import request
+import urllib
 import time
 #import os
 
 
 @app.route('/index')
-@app.route('/input')
 @app.route('/')
 def input():
-    return render_template("input.html")
+    return render_template("index.html")
 
 
 @app.route('/output/')
-def output():
-    video_url = request.args.get('video_url')
+@app.route('/output/<path:video_url>')
+def output(video_url=None):
+    if not video_url: # test
+        video_url = 'https://www.youtube.com/watch?v=mrU6e6kvFR8'
+    else:
+        video_url = urllib.parse.unquote_plus(video_url)
 
-    #links = proc_utils.audio_process(video_url)
+    # def event():  # for testing
+    #     links = ['i_QdlmDToVM',
+    #              'CQY3KUR3VzM',
+    #              'hzKGo0q4T7c']
+    #
+    #     for l in links:
+    #         yield server_sent_event(l)
+    #         time.sleep(2)
+    #     else:
+    #         yield "event: end\ndata: {}\n\n"
 
-    # return render_template("output.html",links = links)
-
-    return Response(stream_template('output.html', links = proc_utils.audio_process(video_url)))
-    #return Response(event(), mimetype="text/event-stream")
-
-
-# def event():    #for testing
-#     links = ['https://www.youtube.com/embed/i_QdlmDToVM',
-#              'https://www.youtube.com/embed/CQY3KUR3VzM',
-#              'https://www.youtube.com/embed/hzKGo0q4T7c']
-#
-#     for l in links:
-#         yield l
-#         time.sleep(5)
+    return Response(proc_utils.audio_process(video_url), mimetype="text/event-stream")
+    # return Response(event(), mimetype="text/event-stream")
 
 
-def stream_template(template_name, **context):
-    app.update_template_context(context)
-    t = app.jinja_env.get_template(template_name)
-    rv = t.stream(context)
-    #rv.enable_buffering(5)
-    return rv
+def server_sent_event(url_name):
+    return('event: video\ndata: {"video_url":"https://www.youtube.com/embed/%s"}\n\n' % url_name)    #has to conform to this format for EventSource in js to run

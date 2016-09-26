@@ -61,10 +61,11 @@ def audio_process(url):
     is_music_started = False    #has this piece of music started
     music_min_len = 10    #the minimum length of piece to output
 
+
     now = 0    #time of current processing (seconds)
     start = 0    #time of current music start (seconds)
     end = 0    #time of current music end (seconds)
-    emb_urls = ''    #urls for embedding videos
+    emb_url = ''    #url for embedding videos
 
 
     while True:
@@ -133,6 +134,7 @@ def audio_process(url):
                 if(n_consec_music == 1):
                     start = now - piece_len
                     is_music_started = True
+                    n_consec_music = 0
                 else:
                     n_consec_music += 1
             else:
@@ -144,13 +146,14 @@ def audio_process(url):
                     print(start, end)
                     is_music_started = False
                     if(end-start>music_min_len):
-                        emb_urls = video_name + "?start=" + str(start) + "&end=" + str(end)
-                        yield(emb_urls)
+                        emb_url = video_name + "?start=" + str(start) + "&end=" + str(end)
+                        yield(server_sent_event(emb_url))
                 else:
                     n_consec_nonmusic += 1
             else:
                 n_consec_nonmusic = 0
-
+        #when music is not started, determine when to start using n_consec_music;
+        #when music has started, determine when to stop using n_consec_nonmusic.
 
         print(str(is_music) + "," + str(is_music_prob))
         print(n_consec_music, n_consec_nonmusic, is_music_started)
@@ -161,8 +164,10 @@ def audio_process(url):
 
     #check the last piece
     if(start>end):
-        emb_urls = video_name + "?start=" + str(start)
-        yield(emb_urls)
+        emb_url = video_name + "?start=" + str(start)
+        yield(server_sent_event(emb_url))
+
+    yield("event: end\ndata: {}\n\n")    #end of stream
 
 
 def cat_mag(vect):    #vect length of 500
@@ -186,3 +191,7 @@ def youtube_ulr_conv(in_url):
         video_urlname = None
 
     return(video_urlname)
+
+
+def server_sent_event(url_name):
+    return('event: video\ndata: {"video_url":"https://www.youtube.com/embed/%s"}\n\n' % url_name)    #has to conform to this format for EventSource in js to run

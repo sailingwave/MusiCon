@@ -2,4 +2,5 @@
 '''#!/Users/Nan/anaconda/envs/myapp/bin/python'''
 
 from musicon import app
-app.run(debug=True)
+app.debug=True
+app.run(threaded=True)
