@@ -57,13 +57,15 @@ def audio_process(url):
     # initialize
     n_consec_music = 0    #when consec music>=2, classify as music start
     n_consec_nonmusic = 0
-    n_music_end_consec_piece = 3    #how many consec nonmusic pieces needed to determine an end
+    n_music_end_consec_piece = 4    #how many consec nonmusic pieces needed to determine an end
     is_music_started = False    #has this piece of music started
+    music_min_len = 10    #the minimum length of piece to output
+
 
     now = 0    #time of current processing (seconds)
     start = 0    #time of current music start (seconds)
     end = 0    #time of current music end (seconds)
-    emb_urls = ''    #urls for embedding videos
+    emb_url = ''    #url for embedding videos
 
 
     while True:
@@ -132,6 +134,7 @@ def audio_process(url):
                 if(n_consec_music == 1):
                     start = now - piece_len
                     is_music_started = True
+                    n_consec_music = 0
                 else:
                     n_consec_music += 1
             else:
@@ -142,14 +145,15 @@ def audio_process(url):
                     end = now - piece_len*(n_music_end_consec_piece-1)
                     print(start, end)
                     is_music_started = False
-                    emb_urls = video_name + "?start=" + str(start) + "&end=" + str(end)
-
-                    yield(server_sent_event(emb_urls))
+                    if(end-start>music_min_len):
+                        emb_url = video_name + "?start=" + str(start) + "&end=" + str(end)
+                        yield(server_sent_event(emb_url))
                 else:
                     n_consec_nonmusic += 1
             else:
                 n_consec_nonmusic = 0
-
+        #when music is not started, determine when to start using n_consec_music;
+        #when music has started, determine when to stop using n_consec_nonmusic.
 
         print(str(is_music) + "," + str(is_music_prob))
         print(n_consec_music, n_consec_nonmusic, is_music_started)
@@ -160,8 +164,8 @@ def audio_process(url):
 
     #check the last piece
     if(start>end):
-        emb_urls = video_name + "?start=" + str(start)
-        yield(server_sent_event(emb_urls))
+        emb_url = video_name + "?start=" + str(start)
+        yield(server_sent_event(emb_url))
 
     yield("event: end\ndata: {}\n\n")    #end of stream
 

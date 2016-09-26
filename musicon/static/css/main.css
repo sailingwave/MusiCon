@@ -1,5 +1,36 @@
+body {
+  padding-top: 50px;
+}
+
+.main {
+  padding: 40px 15px;
+  text-align: center;
+}
+
+h1 {
+    font-size: 350%;
+}
+
+
 #video_url {
-	width: 40%;
+    width: 40%;
 	margin: 0 auto;
 	text-align: center;
+}
+
+.scrollbar {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    white-space: nowrap;
+    overflow-y: scroll;
+}
+
+body, html {
+    #overflow: hidden;
+    height:100%;
+}
+
+#progress {
+    font-size:400%;
 }

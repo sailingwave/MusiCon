@@ -18,8 +18,8 @@
     <link href="../../assets/css/ie10-viewport-bug-workaround.css" rel="stylesheet"-->
 
     <!-- Custom styles for this template -->
-    <link href="static/css/starter-template.css" rel="stylesheet">
     <link href="static/css/main.css" rel="stylesheet">
+    <link href="static/css/c3.min.css" rel="stylesheet">
 </head>
 
 <body>
@@ -48,7 +48,7 @@
 <br><br>
 
 <div class="container" id="input_control">
-    <div class="starter-template">
+    <div class="main">
         <h1>MusiCon</h1>
         <h4>Extract music clips out of a YouTube video</h4>
     </div>
@@ -58,8 +58,8 @@
             <label for="video_url">Link to the YouTube music video:</label>
             <br>
             <input type="text" id="video_url" name='video_url'
-                   placeholder="e.g. https://www.youtube.com/watch?v=T1pijyA4WZs"
-                   required autofocus value="https://www.youtube.com/watch?v=mrU6e6kvFR8">
+                   placeholder="e.g. https://www.youtube.com/watch?v=mrU6e6kvFR8"
+                   required autofocus value="https://www.youtube.com/watch?v=3qIQzvmtBBw">
         </div>
 
         <div>
@@ -69,16 +69,35 @@
 </div><!-- /.container -->
 
 <div class="container" id="video">
-    <div class="starter-template">
+    <div style="text-align: center">
         <h2>Here are the music clips</h2>
     </div>
 
-    <div>
-        <button class="btn btn-default btn-sm" id="stopbtn">Stop processing</button>
-    </div>
+    <hr style="background:#888888; border:0; height:2px" />
 
-    <div id="clips" style="text-align: center">
-        <!--clips added using js-->
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-4" style="text-align: center">
+                <div id="status">
+                    <h4>Processing video...</h4>
+                </div>
+
+                <!--<div class="progress">-->
+                    <!--<div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 60%;">-->
+                        <!--60%-->
+                    <!--</div>-->
+                <!--</div>-->
+
+                <button class="btn btn-default btn-sm" id="stopbtn">Stop processing</button>
+
+                <div id="chart"></div>
+
+            </div>
+
+            <div class="col-sm-8" id="clips" style="text-align: center">
+                <!--clips added using js-->
+            </div>
+        </div>
     </div>
 </div><!-- /.container -->
 
@@ -96,6 +115,8 @@
 -->
 <script src="static/js/bootstrap.min.js"></script>
 <script src="static/js/main.js"></script>
+<script src="static/js/d3.min.js" charset="utf-8"></script>
+<script src="static/js/c3.min.js"></script>
 
 </body>
 </html>

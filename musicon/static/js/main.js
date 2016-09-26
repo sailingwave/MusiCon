@@ -17,7 +17,8 @@ $(document).ready(function() {
     		console.log(e);
     		source.close();
         };
-    })
+
+    });
 
     var event_video = function(event){
         var data = JSON.parse(event.data);
@@ -31,10 +32,11 @@ $(document).ready(function() {
 
     var event_end = function(event){
         source.close();
+        $('#status>h4').text("Done!");
     }
 
     $('#stopbtn').click(function() {
         source.close();
     });
-
 })
+
