@@ -132,8 +132,6 @@ def audio_process(url):
         is_music = model_fit.predict(data_pred).astype('bool')
         is_music_prob = model_fit.predict_proba(data_pred)
 
-        yield ('event: processing\ndata: {"progress":"%s","is_music_prob":"%s"}\n\n' % (now,is_music_prob))  #on processing
-
         #need 2 consecutive pieces to be music/non-music to segment
 
         if(not is_music_started):
@@ -168,6 +166,9 @@ def audio_process(url):
         #before next iter
         now = now+piece_len
         print("=====")
+        yield ('event: processing\ndata: {"progress":"%s","is_music_prob":"%s"}\n\n' % (now, is_music_prob[0, 1]))  # on processing
+
+        #end of while
 
     #check the last piece
     if(start>end):
