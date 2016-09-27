@@ -27,10 +27,21 @@ h1 {
 }
 
 body, html {
-    #overflow: hidden;
+    //overflow: hidden;
     height:100%;
 }
 
+.progress {
+    text-align:center;
+    height: 40px;
+}
+
 #progress {
-    font-size:400%;
+    font-size:150%;
+    line-height: 39px;
+    background-color: transparent;
+    color:white;
+    position:absolute;
+    right:0;
+    left:0;
 }

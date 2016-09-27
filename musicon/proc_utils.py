@@ -40,6 +40,11 @@ def audio_process(url):
 
     #stream video
     video = pafy.new(url)
+    video_len = video.length
+    video_title = video.title
+
+    yield ('event: start\ndata: {"video_title":"%s","video_len":"%s"}\n\n' % (video_title,video_len))  # start of stream
+
     bestaudio = video.getbestaudio()
 
     command = [FFMPEG_BIN,
@@ -52,7 +57,7 @@ def audio_process(url):
     pipe = sp.Popen(command, stdout=sp.PIPE, bufsize=10 ** 8)
 
     #construct the embedding url
-    video_name = youtube_ulr_conv(url)
+    video_id = youtube_ulr_conv(url)
 
     # initialize
     n_consec_music = 0    #when consec music>=2, classify as music start
@@ -127,6 +132,8 @@ def audio_process(url):
         is_music = model_fit.predict(data_pred).astype('bool')
         is_music_prob = model_fit.predict_proba(data_pred)
 
+        yield ('event: processing\ndata: {"progress":"%s","is_music_prob":"%s"}\n\n' % (now,is_music_prob))  #on processing
+
         #need 2 consecutive pieces to be music/non-music to segment
 
         if(not is_music_started):
@@ -146,7 +153,7 @@ def audio_process(url):
                     print(start, end)
                     is_music_started = False
                     if(end-start>music_min_len):
-                        emb_url = video_name + "?start=" + str(start) + "&end=" + str(end)
+                        emb_url = video_id + "?start=" + str(start) + "&end=" + str(end)
                         yield(server_sent_event(emb_url))
                 else:
                     n_consec_nonmusic += 1
@@ -164,7 +171,7 @@ def audio_process(url):
 
     #check the last piece
     if(start>end):
-        emb_url = video_name + "?start=" + str(start)
+        emb_url = video_id + "?start=" + str(start)
         yield(server_sent_event(emb_url))
 
     yield("event: end\ndata: {}\n\n")    #end of stream
