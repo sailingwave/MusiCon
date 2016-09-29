@@ -18,6 +18,7 @@ $(document).ready(function() {
     $('#gobtn').click(function() {
         $('#input_control').hide();
         $('#video').show();
+        $('#goback').hide();
 
         source = new EventSource('/output/'+encodeURIComponent($("#video_url").val()));
 
@@ -59,19 +60,54 @@ $(document).ready(function() {
         console.log(video_url);
 
         n_clips = n_clips+1;
-        $('#clips').append('<h5>'+n_clips+'. </h5>');
-        $('#clips').append('<iframe width="360" height="270" src="'+video_url+'" frameborder="0" allowfullscreen></iframe>');
+        $('#clips').append(`
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h2 class="panel-title">`+ n_clips +`.</h2>
+                </div>
+                <div class="panel-body">
+                    <div style="text-align: center">
+                        <iframe width="360" height="270" src="`+video_url+`" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+            `);
     }
 
     var event_end = function(event){
         source.close();
         $('#status>h4').text("Done!");
         progress_bar.attr('style','width: 100%');
+        $('#stopbtn').hide();
+        $('#goback').show();
+
+        if(n_clips == 0){
+            $('#clips').append("<h4>Sorry, no clips found.</h4>");
+        }
     }
 
     $('#stopbtn').click(function(){
         $('#status>h4').text("Processing stopped.");
         source.close();
+        $('#stopbtn').hide();
+        $('#goback').show();
+
+        if(n_clips == 0){
+            $('#clips').append("<h4>Sorry, no clips found.</h4>");
+        }
+    });
+
+    $('#goback').click(function(){
+        $('#stopbtn').show();
+        $('#goback').hide();
+        $('#video').hide();
+        $('#input_control').show();
+        progress_val.text("00:00:00");
+        progress_bar.attr('style','width: 0%');
+        $('#status>h4').text("Processing video...");
+        var source = null;
+        var n_clips = 0;
+        var video_len = 0;
     });
 })
 

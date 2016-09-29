@@ -18,19 +18,22 @@ def audio_process(url):
     '''Find the music/non-music part in a youtube video'''
     # parameter setting
     FFMPEG_BIN = os.environ['FFMPEG_BIN']
-    #SITE_ROOT = current_app.root_path
-    #SITE_ROOT = os.path.abspath('./musicon/')
     SITE_ROOT = './musicon/'
 
     piece_len = 2  # duration of a piece in seconds being processed at a time
     rate = 44100    #sample rate of audio, must be divisible by 2*freq_bin_size
     freq_bin_size = 10    #for bin fft freqs
     n_freq_bins = int(rate/freq_bin_size/2)    #number of freq bins
-
     piece_size = rate * piece_len    #data size of each piece
 
+    n_music_end_consec_piece = 5    #how many consec nonmusic pieces needed to determine an end
+    music_min_len = 10    #the minimum length of piece to output
+    music_prob_thresh = 0.58    #is_music_prob needs to be greater than this to be predicted to be music
+
+    #log file
+    mylog = open('run.log','w')
+
     #load ML models
-    #model_url = os.path.join(SITE_ROOT, "ml_model/rf.pkl")
     model_url = os.path.join(SITE_ROOT, "ml_model/logit.pkl")
     model_fit = joblib.load(model_url)
 
@@ -59,13 +62,11 @@ def audio_process(url):
     #construct the embedding url
     video_id = youtube_ulr_conv(url)
 
+
     # initialize
     n_consec_music = 0    #when consec music>=2, classify as music start
     n_consec_nonmusic = 0
-    n_music_end_consec_piece = 5    #how many consec nonmusic pieces needed to determine an end
     is_music_started = False    #has this piece of music started
-    music_min_len = 10    #the minimum length of piece to output
-
 
     now = 0    #time of current processing (seconds)
     start = 0    #time of current music start (seconds)
@@ -74,7 +75,7 @@ def audio_process(url):
 
 
     while True:
-        print(now)
+        mylog.write(str(now)+"\n")
 
         raw_audio = pipe.stdout.read(piece_size*2*2)    #*2: int16 is two byte
 
@@ -108,7 +109,7 @@ def audio_process(url):
             freq_bins = np.linspace(0,rate/2,n_freq_bins+1)+1e-4    #10Hz/bin, added 1e-4 for exact values, e.g. 0Hz, 10Hz...; +1:two ends
             freq_grp = np.digitize(freqs,freq_bins)
 
-            mags_data = pd.DataFrame(data=np.stack((mags_w/mag_mean,freq_grp)).transpose(),
+            mags_data = pd.DataFrame(data=np.stack((mags_w-mag_mean,freq_grp)).transpose(),
                                      columns=('mag','grp'))
 
             mags_data = mags_data.groupby('grp').mean().iloc[1:,].transpose()
@@ -124,13 +125,14 @@ def audio_process(url):
         # project to PCA
         data_pca = pca_fit.transform(mags_data)
 
-        data_pred = data_pca
-        # data_pred = np.hstack((data_pca, np.array([[mag_mean]]), np.array([cat_mag(mags_sub)]),
-        #                             np.array([[spec_rolloff(mags_sub)]])))
+        #data_pred = data_pca[:,:100]
+
+        data_pred = np.hstack((np.array([cat_mag(mags_sub)]),np.array([[mag_mean]]),data_pca))
+        #data_pred = np.hstack((np.array([cat_mag(mags_sub)]),data_pca))
 
 
-        is_music = model_fit.predict(data_pred).astype('bool')
-        is_music_prob = model_fit.predict_proba(data_pred)
+        is_music_prob = model_fit.predict_proba(data_pred)[0,1]
+        is_music = True if is_music_prob > music_prob_thresh else False
 
         #need 2 consecutive pieces to be music/non-music to segment
 
@@ -139,7 +141,7 @@ def audio_process(url):
                 if(n_consec_music == 1):
                     start = now - piece_len
                     is_music_started = True
-                    n_consec_music = 0
+                    n_consec_music = 0    #reset status
                 else:
                     n_consec_music += 1
             else:
@@ -148,44 +150,44 @@ def audio_process(url):
             if(not is_music):
                 if(n_consec_nonmusic==n_music_end_consec_piece-1):
                     end = now - piece_len*(n_music_end_consec_piece-1)
-                    print(start, end)
+                    mylog.write(str((start, end))+"\n")
                     is_music_started = False
+                    n_consec_nonmusic = 0    #reset status
                     if(end-start>music_min_len):
                         emb_url = video_id + "?start=" + str(start) + "&end=" + str(end)
                         yield(server_sent_event(emb_url))
                 else:
                     n_consec_nonmusic += 1
             else:
-                n_consec_nonmusic = 0
+                n_consec_nonmusic = n_consec_nonmusic-1 if n_consec_nonmusic>0 else 0;
+
         #when music is not started, determine when to start using n_consec_music;
         #when music has started, determine when to stop using n_consec_nonmusic.
 
-        print(str(is_music) + "," + str(is_music_prob))
-        print(n_consec_music, n_consec_nonmusic, is_music_started)
+        mylog.write(str((is_music,is_music_prob))+"\n")
+        mylog.write(str((n_consec_music, n_consec_nonmusic, is_music_started))+"\n")
 
         #before next iter
         now = now+piece_len
-        print("=====")
-        yield ('event: processing\ndata: {"progress":"%s","is_music_prob":"%s"}\n\n' % (now, is_music_prob[0, 1]))  # on processing
+        mylog.write("=====\n\n")
+        mylog.flush()
+
+        yield ('event: processing\ndata: {"progress":"%s","is_music_prob":"%s"}\n\n' % (now, is_music_prob))  # on processing
 
         #end of while
 
     #check the last piece
-    if(start>end):
+    if(is_music_started):
         emb_url = video_id + "?start=" + str(start)
         yield(server_sent_event(emb_url))
 
     yield("event: end\ndata: {}\n\n")    #end of stream
 
+    mylog.close()
+
 
 def cat_mag(vect):    #vect length of 500
-    return(np.hstack((np.mean(vect[0:8]),np.mean(vect[8:300]),np.mean(vect[300:]))))
-
-
-def spec_rolloff(vect,k=0.85):
-    spectralSum = np.sum(vect)
-    sr_t = np.where(np.cumsum(vect) >= k * spectralSum)[0][0]
-    return(sr_t)
+    return(np.hstack((np.mean(vect[0:8]),np.mean(vect[8:30]),np.mean(vect[30:]))))
 
 
 def youtube_ulr_conv(in_url):
