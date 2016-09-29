@@ -28,7 +28,7 @@ def audio_process(url):
 
     n_music_end_consec_piece = 5    #how many consec nonmusic pieces needed to determine an end
     music_min_len = 10    #the minimum length of piece to output
-    music_prob_thresh = 0.58    #is_music_prob needs to be greater than this to be predicted to be music
+    music_prob_thresh = 0.54    #is_music_prob needs to be greater than this to be predicted to be music
 
     #log file
     mylog = open('run.log','w')
@@ -159,7 +159,8 @@ def audio_process(url):
                 else:
                     n_consec_nonmusic += 1
             else:
-                n_consec_nonmusic = n_consec_nonmusic-1 if n_consec_nonmusic>0 else 0;
+                n_consec_nonmusic = 0
+                #n_consec_nonmusic = n_consec_nonmusic-1 if n_consec_nonmusic>0 else 0;
 
         #when music is not started, determine when to start using n_consec_music;
         #when music has started, determine when to stop using n_consec_nonmusic.
