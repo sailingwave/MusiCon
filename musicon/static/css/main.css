@@ -49,6 +49,7 @@ h1 {
     left: 0;
     right: 0;
     top: 0;
+    transform: scale(1.02);
 
     background-image: url('/static/img/bg.jpg');
     background-size: cover;
