@@ -1,6 +1,7 @@
 body {
     padding-top: 50px;
     height:100%;
+    overflow: hidden;
 }
 
 .main {
@@ -20,11 +21,12 @@ h1 {
 }
 
 .scrollbar {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    white-space: nowrap;
-    overflow-y: scroll;
+    position: fixed;
+    top: 25%;
+    bottom: 0;
+    right: 10%;
+    width: 45%;
+    overflow-y: auto;
 }
 
 .progress {
