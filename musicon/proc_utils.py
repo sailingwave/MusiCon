@@ -127,7 +127,7 @@ def audio_process(url):
 
         #data_pred = data_pca[:,:100]
 
-        data_pred = np.hstack((np.array([cat_mag(mags_sub)]),np.array([[mag_mean]]),data_pca))
+        data_pred = np.hstack((np.array([cat_mag(mags_sub)])[:,0:2],np.array([[mag_mean]]),data_pca))
         #data_pred = np.hstack((np.array([cat_mag(mags_sub)]),data_pca))
 
 
